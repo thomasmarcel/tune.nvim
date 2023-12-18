@@ -1,106 +1,47 @@
 local M = {}
 
--- Define the path to the colorschemes directory
-local colorschemePath = vim.fn.expand("~/.config/nvim/lua/custom/plugins/colorschemes/")
+local function set_default_colorscheme(default_scheme)
+	if default_scheme then
+		vim.cmd('colorscheme ' .. default_scheme)
+	end
+end
 
--- Load colorschemes from the colorschemes directory
-local function loadColorschemes()
-	local dir = vim.fn.expand("~/.config/nvim/lua/custom/plugins/colorschemes/")
-	local colorschemes = {}
+function M.setup(config)
+	config = config or {}
 
-	-- Iterate over files in the colorschemes directory
-	for _, entry in ipairs(vim.fn.readdir(dir)) do
-		local path = dir .. "/" .. entry
-		local is_dir = vim.fn.isdirectory(path) == 1
+	-- Set default colorscheme from configuration or use a default one
+	set_default_colorscheme(config.default_colorscheme or 'rose-pine')
 
-		-- Extract colorscheme name from directories or valid vim files
-		local colorscheme = is_dir and entry or entry:match("^(.+)%..-$")
+	-- Function to get the list of available colorschemes using the API
+	function M.get_available_colorschemes()
+		local runtime_paths = vim.api.nvim_list_runtime_paths()
 
-		-- If directory name is in "vim-<colorscheme>", use <colorscheme> as the colorscheme name
-		if is_dir and colorscheme:match("^vim%-(.+)$") then
-			colorscheme = colorscheme:match("^vim%-(.+)$")
+		local colorschemes = {}
+
+		for _, path in ipairs(runtime_paths) do
+			local colors_path = path .. '/colors'
+			local colors = vim.fn.glob(colors_path .. '/*.vim', false, true)
+			for _, color in ipairs(colors) do
+				local colorscheme = vim.fn.fnamemodify(color, ':t:r')
+				table.insert(colorschemes, colorscheme)
+			end
 		end
 
-		-- Append colorscheme name to the list
-		if colorscheme then
-			table.insert(colorschemes, colorscheme)
-		end
+		return colorschemes
 	end
 
-	return colorschemes
-end
-
--- Create the default colorscheme object
-local function createDefaultObject()
-	local default = {
-		font = "default",
-		background = "dark",
-		fontSize = 12,
-	}
-	return default
-end
-
--- Set the colorscheme, font, background, and font size
-function M.setTheme(theme, font, background, fontSize)
-	theme = theme or ""
-	font = font or ""
-	background = background or ""
-	fontSize = fontSize or 0
-	vim.cmd("colorscheme " .. theme)
-	vim.o.guifont = font
-	if vim.fn.has("gui_running") == 1 then
-		vim.o.guifontsize = fontSize
-	end
-end
-
--- Command to set the theme with autocompletion
-local function setThemeCommand(theme)
-	local mapping = string.format("<cmd>lua require('tune').setTheme('%s', '', '', 0)<CR>", theme)
-	vim.cmd(
-		string.format(
-			"command! -nargs=1 -complete=customlist,v:lua.require('tune').completeColorschemes Tune lua require('tune').setTheme(<f-args>)",
-			theme
-		)
-	)
-	vim.api.nvim_set_keymap("n", "<Leader>t" .. theme, mapping, { silent = true })
-end
-
--- Custom completion function for colorschemes
-function M.completeColorschemes(arglead, cmdline, cursorpos)
-	-- print(arglead, cmdline, cursorpos)
-	local debug_message = string.format("Complete Colorschemes: %s %s %d", arglead, cmdline, cursorpos)
-	vim.api.nvim_echo({ { debug_message, "Normal" } }, true, {})
-	local colorschemes = loadColorschemes()
-	local matches = {}
-	for _, scheme in ipairs(colorschemes) do
-		if scheme:find(arglead) == 1 then
-			table.insert(matches, scheme)
-		end
-	end
-	table.sort(matches)
-	return matches
-end
-
--- Plugin setup function
-function M.setup()
-	-- Load colorschemes
-	local colorschemes = loadColorschemes()
-
-	-- Create default colorscheme object
-	local defaultObject = createDefaultObject()
-
-	-- Add commands for each colorscheme
-	for _, theme in ipairs(colorschemes) do
-		setThemeCommand(theme)
+	-- Function to set a colorscheme
+	function M.set_colorscheme(colorscheme)
+		vim.cmd('colorscheme ' .. colorscheme)
 	end
 
-	-- Add a command to set the theme with custom settings
-	vim.cmd([[
-    command! -nargs=* -complete=customlist,v:lua.require('tune').completeColorschemes Tune lua require('tune').setTheme(<f-args>)
-  ]])
-
-	-- Set the default colorscheme
-	M.setTheme(colorschemes[1], defaultObject.font, defaultObject.background, defaultObject.fontSize)
+	-- Function to pick a random colorscheme
+	function M.pick_random_colorscheme()
+		local colorschemes = M.get_available_colorschemes()
+		local random_index = math.random(1, #colorschemes)
+		local random_colorscheme = colorschemes[random_index]
+		M.set_colorscheme(random_colorscheme)
+	end
 end
 
 return M
