@@ -10,7 +10,7 @@ function M.setup(config)
 	config = config or {}
 
 	-- Set default colorscheme from configuration or use a default one
-	set_default_colorscheme(config.default_colorscheme or "rose-pine")
+	set_default_colorscheme(config.default_colorscheme or "default")
 
 	-- Function to get the list of available colorschemes using the API
 	function M.get_available_colorschemes()
