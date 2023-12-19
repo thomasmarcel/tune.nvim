@@ -45,3 +45,4 @@ tune.nvim provide the following commands:
 
 - [ ] Pass a list of colorschemes to pick from
 - [ ] Define GUI font family and size
+- [ ] Autocomplete colorscheme names
